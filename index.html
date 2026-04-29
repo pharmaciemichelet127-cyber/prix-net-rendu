@@ -1,1 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prix Net Rendu — Pharmacie Michelet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F3EE; --surface: #FFFFFF; --border: #E2DED6;
+      --text: #1A1916; --muted: #8A857C;
+      --accent: #2D5016; --accent-light: #EDF2E6; --accent-mid: #4A7A24;
+      --danger: #8B1A1A; --danger-light: #FDF0F0;
+      --warn-bg: #FFF8E6; --warn-text: #856404;
+      --mono: 'DM Mono', monospace; --serif: 'Instrument Serif', serif; --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+    header { border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; display: flex; align-items: baseline; gap: 1rem; background: var(--surface); }
+    .logo { font-family: var(--serif); font-size: 22px; color: var(--accent); letter-spacing: -0.01em; }
+    .logo-sub { font-size: 12px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+    main { max-width: 1050px; margin: 0 auto; padding: 2.5rem 2rem; }
+    .page-title { font-family: var(--serif); font-size: 30px; color: var(--text); margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+    .drop-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; background: var(--surface); transition: all 0.18s; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--accent-mid); background: var(--accent-light); }
+    .drop-icon { width: 52px; height: 52px; background: var(--accent-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 22px; }
+    .drop-title { font-size: 15px; font-weight: 500; margin-bottom: 0.3rem; }
+    .drop-sub { font-size: 12px; color: var(--muted); margin-bottom: 0; }
+    input[type="file"] { display: none; }
+    .file-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-light); border: 1px solid #C5D9A8; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; color: var(--accent); margin-top: 1.25rem; font-family: var(--mono); }
+    .remove-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; padding: 0 2px; transition: color 0.1s; }
+    .remove-btn:hover { color: var(--danger); }
+    .btn-primary { margin-top: 1.5rem; width: 100%; height: 46px; border-radius: 8px; border: none; background: var(--accent); color: white; font-size: 14px; font-weight: 500; font-family: var(--sans); cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .loader { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.65s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-line { margin-top: 0.75rem; font-size: 12px; color: var(--muted); text-align: center; font-family: var(--mono); min-height: 18px; }
+    .error-line { color: var(--danger); font-size: 13px; margin-top: 0.5rem; text-align: center; }
+    .results { margin-top: 2.5rem; }
+    .section-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.75rem; }
+    .invoice-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; }
+    .meta-cell { background: var(--surface); padding: 0.875rem 1rem; }
+    .meta-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 3px; }
+    .meta-value { font-size: 13px; font-weight: 500; }
+    .frais-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+    .frais-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; }
+    .chip-amount { font-family: var(--mono); font-weight: 500; color: var(--accent-mid); }
+    .alert { border-radius: 8px; padding: 0.875rem 1.1rem; margin-bottom: 1.25rem; font-size: 13px; line-height: 1.5; }
+    .alert-warn { background: var(--warn-bg); border: 1px solid #F0D070; color: var(--warn-text); }
+    .alert-danger { background: var(--danger-light); border: 1px solid #F5C0C0; color: var(--danger); }
+    .alert-ok { background: var(--accent-light); border: 1px solid #C5D9A8; color: var(--accent); }
+    .alert-title { font-weight: 500; margin-bottom: 4px; }
+    .ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .ctrl-badge { font-size: 11px; font-family: var(--mono); padding: 4px 10px; border-radius: 4px; }
+    .ctrl-badge.ok { background: var(--accent-light); color: var(--accent); }
+    .ctrl-badge.warn { background: var(--warn-bg); color: var(--warn-text); }
+    .ctrl-badge.err { background: var(--danger-light); color: var(--danger); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead { background: var(--bg); border-bottom: 1px solid var(--border); }
+    th { padding: 10px 12px; text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; font-weight: 400; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #FAFAF8; }
+    tr.incoherent td { background: #FDF5F5; }
+    .td-r { text-align: right; } .th-r { text-align: right; }
+    .ean-badge { font-family: var(--mono); font-size: 10px; background: #EEF4FF; color: #2D4A8A; border: 1px solid #C8D8F5; padding: 2px 6px; border-radius: 4px; }
+    .ref-text { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .pct-cell { color: var(--muted); }
+    .pct-bar-bg { background: var(--bg); border-radius: 2px; height: 3px; margin-top: 4px; min-width: 50px; }
+    .pct-bar { background: var(--accent-mid); height: 3px; border-radius: 2px; }
+    .net-val { font-family: var(--mono); font-weight: 500; color: var(--accent); font-size: 13px; }
+    .net-total { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .incoh-flag { font-size: 10px; color: var(--danger); font-family: var(--mono); margin-top: 2px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 1.5rem; }
+    .sum-card { background: var(--surface); padding: 1rem 1.25rem; }
+    .sum-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+    .sum-value { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+    .sum-value.accent { color: var(--accent); }
+    .note { font-size: 11px; color: var(--muted); text-align: right; margin-top: 0.6rem; font-style: italic; }
+    .no-frais-note { font-size: 12px; color: var(--muted); font-style: italic; }
+    @media (max-width: 600px) { main { padding: 1.5rem 1rem; } .summary-grid { grid-template-columns: repeat(2, 1fr); } header { padding: 1rem; } }
+  </style>
+</head>
+<body>
+<header>
+  <span class="logo">Pharmacie Michelet</span>
+  <span class="logo-sub">Prix Net Rendu</span>
+</header>
+<main>
+  <h1 class="page-title">Calcul du prix net rendu</h1>
+  <p class="page-sub">Analyse en 6 étapes avec contrôles stricts — remises exclues, frais annexes répartis au prorata, zéro écart toléré.</p>
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">📄</div>
+    <div class="drop-title">Importer la facture</div>
+    <div class="drop-sub">Glissez-déposez ou cliquez — PDF, JPG, PNG acceptés</div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+  </div>
+  <div id="fileInfo"></div>
+  <button class="btn-primary" id="btnAnalyze" onclick="analyze()" disabled>Calculer le prix net rendu</button>
+  <div class="status-line" id="status"></div>
+  <div class="error-line" id="errorMsg"></div>
+  <div class="results" id="results" style="display:none"></div>
+</main>
+<script>
+  const PROXY_URL = '/api/analyze';
+  const MODEL = 'claude-sonnet-4-20250514';
+  let fileData = null, fileType = null;
 
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  dropZone.onclick = () => fileInput.click();
+  dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('dragging'); };
+  dropZone.ondragleave = () => dropZone.classList.remove('dragging');
+  dropZone.ondrop = e => { e.preventDefault(); dropZone.classList.remove('dragging'); handleFile(e.dataTransfer.files[0]); };
+  fileInput.onchange = e => handleFile(e.target.files[0]);
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!['application/pdf','image/jpeg','image/png','image/jpg'].includes(file.type)) { showError('Format non supporté.'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      fileData = e.target.result.split(',')[1]; fileType = file.type;
+      showError('');
+      document.getElementById('fileInfo').innerHTML = `<div style="margin-top:1rem"><span class="file-pill">📎 ${file.name} · ${(file.size/1024).toFixed(0)} Ko <button class="remove-btn" onclick="removeFile()">✕</button></span></div>`;
+      document.getElementById('btnAnalyze').disabled = false;
+      document.getElementById('status').textContent = 'Fichier prêt — cliquez sur Calculer.';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFile() {
+    fileData = null; fileType = null;
+    document.getElementById('fileInfo').innerHTML = '';
+    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('status').textContent = '';
+    document.getElementById('results').style.display = 'none';
+    fileInput.value = '';
+  }
+
+  function showError(msg) { document.getElementById('errorMsg').textContent = msg; }
+
+  async function analyze() {
+    if (!fileData) return;
+    const btn = document.getElementById('btnAnalyze');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>Analyse en cours…';
+    document.getElementById('status').textContent = 'Claude analyse la facture en 6 étapes…';
+    showError('');
+    document.getElementById('results').style.display = 'none';
+
+    const contentType = fileType === 'application/pdf' ? 'document' : 'image';
+
+    const prompt = `Tu es un expert en analyse de factures pharmacie.
+Objectif : calculer le prix net rendu réel par produit (coût de revient unitaire).
+
+LECTURE QUANTITÉS (CRITIQUE) :
+- La quantité est le chiffre en PREMIÈRE colonne, AVANT le nom du produit
+- Ne JAMAIS supposer une quantité de 1 — toujours lire explicitement
+- La facture indique souvent "X lignes / Y articles" — utiliser Y comme contrôle
+- Si illisible → noter dans "incoherence"
+
+BASE PRODUITS — RÈGLE CENTRALE :
+- Utiliser UNIQUEMENT le "Total HT" de chaque ligne produit (dernière colonne du tableau)
+- IGNORER complètement : PU HT brut, % remise, total remises → inutiles et sources d'erreur
+- Structure colonnes Sagitta / La Centrale Pharma :
+  COL 1 : Qté | COL 2 : Désignation | COL 3 : EAN | COL 4 : PU brut | COL 5 : % Remise | COL 6 : PU net | COL 7 : Total HT ligne ← SEULE valeur fiable
+
+RÈGLE CRITIQUE DE FIABILITÉ :
+- Le "Total HT ligne" est la SEULE valeur fiable
+- Si (Qté × PU HT net affiché) ≠ Total HT ligne → recalculer : PU réel = Total HT ligne / quantité
+- Toujours utiliser le PU recalculé, jamais le PU affiché si incohérence
+
+FRAIS ANNEXES — HT STRICT :
+- Identifier uniquement les frais compte HT : frais de compte, transport, port, logistique, assurance
+- IGNORER toute ligne de TVA (ex: "Frais T.V.A. 20% compte") → TVA JAMAIS dans le coût de revient
+- IGNORER toutes les remises commerciales
+- Ne jamais ajouter les frais deux fois
+- Sur facture Sagitta : le Total Net HT inclut déjà les frais compte
+
+RECONSTITUTION DE LA BASE :
+- Base produits HT = Total Net HT facture - frais HT
+- Vérifier que cette base correspond à la somme des lignes produits
+
+CALCULS :
+1. Somme produits HT = somme des Total HT lignes
+2. Frais HT = montant HT des frais annexes (hors TVA)
+3. Poids ligne = Total HT ligne / Somme produits HT
+4. Frais répartis ligne = Frais HT × poids ligne
+5. Coût réel total ligne = Total HT ligne + frais répartis ligne
+6. Prix net rendu unitaire = Coût réel total ligne / quantité
+
+CONTRÔLES OBLIGATOIRES — écart > 0,02 € → STOP et expliquer :
+- Somme produits HT + Frais HT = Total Net HT facture
+- Somme des frais répartis = Frais HT
+- Somme des coûts réels = Total Net HT facture
+
+Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.
+
+{
+  "fournisseur": "",
+  "numero_facture": "",
+  "date": "",
+  "devise": "EUR",
+  "nb_lignes_facture": 0,
+  "nb_articles_facture": 0,
+  "produits": [
+    {
+      "designation": "",
+      "ean": "",
+      "reference": "",
+      "quantite": 1,
+      "prix_unitaire_ht": 0.000,
+      "total_ht": 0.000,
+      "total_ht_calcule": 0.000,
+      "incoherence": ""
+    }
+  ],
+  "frais_annexes": [
+    { "libelle": "", "montant": 0.00 }
+  ],
+  "remises_exclues": [
+    { "libelle": "", "montant": 0.00 }
+  ],
+  "total_produits_ht_facture": 0.00,
+  "total_produits_ht_calcule": 0.00,
+  "total_frais_annexes": 0.00,
+  "total_facture_ht": 0.00,
+  "controle_global": "",
+  "ecarts_residuels": ""
+}`;
+
+    try {
+      const resp = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: [{ type: contentType, source: { type: 'base64', media_type: fileType, data: fileData } }, { type: 'text', text: prompt }] }] })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error?.message || 'Erreur API');
+      const raw = data.content.map(b => b.text || '').join('');
+      let inv;
+      try { inv = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+      catch(e) { throw new Error('Document illisible. Vérifiez la qualité du fichier.'); }
+      const produits = inv.produits || [];
+      if (!produits.length) throw new Error('Aucun produit détecté.');
+      const frais = inv.frais_annexes || [];
+      const totalFrais = inv.total_frais_annexes || frais.reduce((s, f) => s + (f.montant || 0), 0);
+      const totalProduitsHT = inv.total_produits_ht_calcule || inv.total_produits_ht_facture || produits.reduce((s, p) => s + (p.total_ht || 0), 0);
+      renderResults(inv, produits, frais, totalFrais, totalProduitsHT);
+      const nbInco = produits.filter(p => p.incoherence && p.incoherence.trim()).length;
+      const totalQty = produits.reduce((s, p) => s + (p.quantite || 1), 0);
+      document.getElementById('status').textContent = `✓ ${produits.length} ligne(s) · ${totalQty} article(s) · ${frais.length} poste(s) de frais${nbInco ? ` · ⚠ ${nbInco} incohérence(s)` : ''}`;
+    } catch(e) {
+      showError(e.message);
+      document.getElementById('status').textContent = '';
+    }
+    btn.innerHTML = 'Calculer le prix net rendu';
+    btn.disabled = false;
+  }
+
+  function fmt(n, d=2) { return (Math.round(n * 10000) / 10000).toFixed(d); }
+
+  function renderResults(inv, produits, frais, totalFrais, totalProduitsHT) {
+    const devise = inv.devise || '€';
+    let totalNet = 0, sumFraisRepartis = 0;
+
+    // Meta
+    const metaItems = [
+      inv.fournisseur    && { l: 'Fournisseur',   v: inv.fournisseur },
+      inv.numero_facture && { l: 'N° facture',     v: inv.numero_facture },
+      inv.date           && { l: 'Date',           v: inv.date },
+      inv.nb_lignes_facture && { l: 'Lignes / articles', v: `${inv.nb_lignes_facture} / ${inv.nb_articles_facture}` },
+                            { l: 'Devise',         v: devise },
+    ].filter(Boolean);
+    const metaHTML = metaItems.map(m => `<div class="meta-cell"><div class="meta-label">${m.l}</div><div class="meta-value">${m.v}</div></div>`).join('');
+
+    // Alertes
+    let alertesHTML = '';
+    if (inv.controle_global && inv.controle_global.trim()) {
+      const ecartGlobal = Math.abs((inv.total_produits_ht_facture || 0) - (inv.total_produits_ht_calcule || 0));
+      alertesHTML += `<div class="alert ${ecartGlobal < 0.02 ? 'alert-ok' : 'alert-warn'}">
+        <div class="alert-title">Contrôle global (étape 2)</div>${inv.controle_global}</div>`;
+    }
+    if (inv.ecarts_residuels && inv.ecarts_residuels.trim()) {
+      alertesHTML += `<div class="alert alert-warn"><div class="alert-title">Écarts résiduels (étape 6)</div>${inv.ecarts_residuels}</div>`;
+    }
+
+    // Frais chips
+    const fraisHTML = frais.length
+      ? frais.map(f => `<span class="chip">${f.libelle} <span class="chip-amount">+${fmt(f.montant)} ${devise}</span></span>`).join('')
+      : `<span class="no-frais-note">Aucun frais annexe détecté</span>`;
+
+    const remises = inv.remises_exclues || [];
+    const remisesHTML = remises.length
+      ? `<div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">Remises exclues (déjà intégrées dans les prix HT)</div>
+          <div class="frais-chips">${remises.map(r => `<span class="chip" style="opacity:0.7">${r.libelle} <span style="font-family:var(--mono);color:var(--warn-text)">${fmt(r.montant)} ${devise}</span></span>`).join('')}</div>
+        </div>` : '';
+
+    // Rows
+    let rows = '';
+    produits.forEach(p => {
+      const totalHT    = p.total_ht || 0;
+      const poidsPct   = totalProduitsHT > 0 ? totalHT / totalProduitsHT : 0;
+      const fraisLigne = totalFrais * poidsPct;
+      const coutTotal  = totalHT + fraisLigne;
+      const qty        = p.quantite || 1;
+      const coutU      = coutTotal / qty;
+      totalNet        += coutTotal;
+      sumFraisRepartis += fraisLigne;
+      const hasInco    = p.incoherence && p.incoherence.trim();
+
+      rows += `<tr class="${hasInco ? 'incoherent' : ''}">
+        <td>
+          ${p.designation || '—'}
+          ${p.reference ? `<div class="ref-text">${p.reference}</div>` : ''}
+          ${hasInco ? `<div class="incoh-flag">⚠ ${p.incoherence}</div>` : ''}
+        </td>
+        <td>${p.ean ? `<span class="ean-badge">${p.ean}</span>` : `<span style="color:var(--muted);font-size:11px">—</span>`}</td>
+        <td class="td-r"><strong>${qty}</strong></td>
+        <td class="td-r" style="font-family:var(--mono)">${fmt(p.prix_unitaire_ht, 3)}</td>
+        <td class="td-r" style="font-family:var(--mono)">${fmt(totalHT, 2)}</td>
+        <td class="td-r pct-cell">
+          ${fmt(poidsPct * 100, 1)}%
+          <div class="pct-bar-bg"><div class="pct-bar" style="width:${Math.min(poidsPct * 100, 100)}%"></div></div>
+        </td>
+        <td class="td-r" style="font-family:var(--mono);color:var(--muted)">+${fmt(fraisLigne, 3)}</td>
+        <td class="td-r">
+          <div class="net-val">${fmt(coutU, 3)} ${devise}</div>
+          <div class="net-total">${fmt(coutTotal, 2)} total</div>
+        </td>
+      </tr>`;
+    });
+
+    // Contrôles
+    const diffFrais   = Math.abs(sumFraisRepartis - totalFrais);
+    const ctrlFraisOk = diffFrais < 0.01;
+    const totalFactureHT = inv.total_facture_ht || 0;
+    const diffTotal   = totalFactureHT > 0 ? Math.abs(totalNet - totalFactureHT) : -1;
+    const ctrlTotalOk = diffTotal < 0 || diffTotal < 0.05;
+    const nbInco      = produits.filter(p => p.incoherence && p.incoherence.trim()).length;
+    const totalQtyLu  = produits.reduce((s, p) => s + (p.quantite || 1), 0);
+    const qtyFacture  = inv.nb_articles_facture || 0;
+    const ctrlQtyOk   = qtyFacture === 0 || totalQtyLu === qtyFacture;
+
+    const ctrlHTML = `<div class="ctrl-row">
+      <span class="ctrl-badge ${ctrlFraisOk ? 'ok' : 'err'}">
+        ${ctrlFraisOk ? '✓' : '✗'} Frais répartis ${fmt(sumFraisRepartis, 3)} / attendu ${fmt(totalFrais, 2)} ${devise}
+      </span>
+      ${totalFactureHT > 0 ? `<span class="ctrl-badge ${ctrlTotalOk ? 'ok' : 'warn'}">
+        ${ctrlTotalOk ? '✓' : '⚠'} Coût total ${fmt(totalNet, 2)} / facture HT ${fmt(totalFactureHT, 2)} ${devise}
+      </span>` : ''}
+      ${qtyFacture > 0 ? `<span class="ctrl-badge ${ctrlQtyOk ? 'ok' : 'err'}">
+        ${ctrlQtyOk ? '✓' : '⚠'} Articles lus : ${totalQtyLu} / attendu : ${qtyFacture}
+      </span>` : ''}
+      ${nbInco > 0
+        ? `<span class="ctrl-badge warn">⚠ ${nbInco} incohérence(s) ligne</span>`
+        : `<span class="ctrl-badge ok">✓ Toutes les lignes cohérentes</span>`}
+    </div>`;
+
+    const pctFrais = totalProduitsHT > 0 ? fmt(totalFrais / totalProduitsHT * 100, 2) : '0.00';
+
+    document.getElementById('results').innerHTML = `
+      <div class="section-label">Informations facture</div>
+      <div class="invoice-meta">${metaHTML}</div>
+      ${alertesHTML}
+      <div class="section-label">Frais annexes identifiés</div>
+      <div class="frais-box">
+        <div class="frais-chips">${fraisHTML}</div>
+        ${remisesHTML}
+      </div>
+      ${ctrlHTML}
+      <div class="section-label">Détail par produit</div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>Désignation</th><th>EAN</th>
+          <th class="th-r">Qté</th><th class="th-r">PU HT net</th>
+          <th class="th-r">Total HT net</th><th class="th-r">Poids %</th>
+          <th class="th-r">Frais répartis</th><th class="th-r">Coût réel / u</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p class="note">Frais répartis au prorata du montant HT · Remises non retraitées</p>
+      <div class="summary-grid">
+        <div class="sum-card"><div class="sum-label">Total produits HT</div><div class="sum-value">${fmt(totalProduitsHT, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">Total frais annexes</div><div class="sum-value">${fmt(totalFrais, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">Coût réel total</div><div class="sum-value accent">${fmt(totalNet, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">% frais / HT</div><div class="sum-value">${pctFrais}%</div></div>
+      </div>`;
+    document.getElementById('results').style.display = 'block';
+  }
+</script>
+</body>
+</html>
