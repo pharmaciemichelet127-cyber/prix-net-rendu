@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prix Net Rendu — Pharmacie Michelet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F3EE; --surface: #FFFFFF; --border: #E2DED6;
+      --text: #1A1916; --muted: #8A857C;
+      --accent: #2D5016; --accent-light: #EDF2E6; --accent-mid: #4A7A24;
+      --danger: #8B1A1A; --danger-light: #FDF0F0;
+      --warn-bg: #FFF8E6; --warn-text: #856404;
+      --orange: #B45309; --orange-light: #FEF3C7;
+      --mono: 'DM Mono', monospace; --serif: 'Instrument Serif', serif; --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+    /* HEADER & TABS */
+    header { border-bottom: 1px solid var(--border); background: var(--surface); }
+    .header-top { padding: 1.25rem 2rem 0; display: flex; align-items: baseline; gap: 1rem; }
+    .logo { font-family: var(--serif); font-size: 22px; color: var(--accent); letter-spacing: -0.01em; }
+    .logo-sub { font-size: 12px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+    .tabs { display: flex; gap: 0; padding: 0 2rem; margin-top: 0.75rem; }
+    .tab-btn { padding: 0.6rem 1.25rem; font-size: 13px; font-family: var(--sans); font-weight: 500; border: none; background: none; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-badge { font-size: 10px; background: var(--danger); color: white; border-radius: 10px; padding: 1px 6px; font-family: var(--mono); }
+    .tab-badge.green { background: var(--accent-mid); }
+
+    /* PAGES */
+    .page { display: none; }
+    .page.active { display: block; }
+    main { max-width: 1050px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+    /* UPLOAD */
+    .page-title { font-family: var(--serif); font-size: 30px; color: var(--text); margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+    .drop-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; background: var(--surface); transition: all 0.18s; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--accent-mid); background: var(--accent-light); }
+    .drop-icon { width: 52px; height: 52px; background: var(--accent-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 22px; }
+    .drop-title { font-size: 15px; font-weight: 500; margin-bottom: 0.3rem; }
+    .drop-sub { font-size: 12px; color: var(--muted); }
+    input[type="file"] { display: none; }
+    .file-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-light); border: 1px solid #C5D9A8; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; color: var(--accent); margin-top: 1.25rem; font-family: var(--mono); }
+    .remove-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; padding: 0 2px; transition: color 0.1s; }
+    .remove-btn:hover { color: var(--danger); }
+    .btn-primary { margin-top: 1.5rem; width: 100%; height: 46px; border-radius: 8px; border: none; background: var(--accent); color: white; font-size: 14px; font-weight: 500; font-family: var(--sans); cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .loader { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.65s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-line { margin-top: 0.75rem; font-size: 12px; color: var(--muted); text-align: center; font-family: var(--mono); min-height: 18px; }
+    .error-line { color: var(--danger); font-size: 13px; margin-top: 0.5rem; text-align: center; }
+    .results { margin-top: 2.5rem; }
+
+    /* RESULTS */
+    .section-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.75rem; }
+    .invoice-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; }
+    .meta-cell { background: var(--surface); padding: 0.875rem 1rem; }
+    .meta-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 3px; }
+    .meta-value { font-size: 13px; font-weight: 500; }
+    .frais-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+    .frais-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; }
+    .chip-amount { font-family: var(--mono); font-weight: 500; color: var(--accent-mid); }
+    .alert { border-radius: 8px; padding: 0.875rem 1.1rem; margin-bottom: 1.25rem; font-size: 13px; line-height: 1.5; }
+    .alert-warn { background: var(--warn-bg); border: 1px solid #F0D070; color: var(--warn-text); }
+    .alert-ok { background: var(--accent-light); border: 1px solid #C5D9A8; color: var(--accent); }
+    .alert-title { font-weight: 500; margin-bottom: 4px; }
+    .ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .ctrl-badge { font-size: 11px; font-family: var(--mono); padding: 4px 10px; border-radius: 4px; }
+    .ctrl-badge.ok { background: var(--accent-light); color: var(--accent); }
+    .ctrl-badge.warn { background: var(--warn-bg); color: var(--warn-text); }
+    .ctrl-badge.err { background: var(--danger-light); color: var(--danger); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead { background: var(--bg); border-bottom: 1px solid var(--border); }
+    th { padding: 10px 12px; text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; font-weight: 400; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #FAFAF8; }
+    tr.incoherent td { background: #FDF5F5; }
+    .td-r { text-align: right; } .th-r { text-align: right; }
+    .ean-badge { font-family: var(--mono); font-size: 10px; background: #EEF4FF; color: #2D4A8A; border: 1px solid #C8D8F5; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .ref-text { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .pct-cell { color: var(--muted); }
+    .pct-bar-bg { background: var(--bg); border-radius: 2px; height: 3px; margin-top: 4px; min-width: 50px; }
+    .pct-bar { background: var(--accent-mid); height: 3px; border-radius: 2px; }
+    .net-val { font-family: var(--mono); font-weight: 500; color: var(--accent); font-size: 13px; }
+    .net-total { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .incoh-flag { font-size: 10px; color: var(--danger); font-family: var(--mono); margin-top: 2px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 1.5rem; }
+    .sum-card { background: var(--surface); padding: 1rem 1.25rem; }
+    .sum-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+    .sum-value { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+    .sum-value.accent { color: var(--accent); }
+    .note { font-size: 11px; color: var(--muted); text-align: right; margin-top: 0.6rem; font-style: italic; }
+    .no-frais-note { font-size: 12px; color: var(--muted); font-style: italic; }
+
+    /* BOUTON BLACKLIST */
+    .btn-blacklist { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px; font-size: 11px; font-family: var(--mono); color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .btn-blacklist:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
+    .btn-blacklist.added { border-color: var(--orange); color: var(--orange); background: var(--orange-light); cursor: default; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.hidden { display: none; }
+    .modal-box { background: var(--surface); border-radius: 14px; padding: 1.75rem; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal-title { font-family: var(--serif); font-size: 20px; margin-bottom: 0.25rem; }
+    .modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 1.25rem; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .modal-field { margin-bottom: 1rem; }
+    .modal-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; display: block; }
+    .modal-input { width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 0.6rem 0.875rem; font-size: 13px; font-family: var(--sans); background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+    .modal-input:focus { border-color: var(--accent-mid); background: white; }
+    .modal-info-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 12px; }
+    .modal-info-row { display: flex; justify-content: space-between; padding: 2px 0; }
+    .modal-info-key { color: var(--muted); }
+    .modal-info-val { font-family: var(--mono); font-weight: 500; }
+    .taux-display { font-size: 18px; font-family: var(--mono); font-weight: 500; text-align: center; padding: 0.5rem; border-radius: 8px; margin-bottom: 1rem; }
+    .taux-display.ok { background: var(--accent-light); color: var(--accent); }
+    .taux-display.warn { background: var(--warn-bg); color: var(--warn-text); }
+    .taux-display.bad { background: var(--danger-light); color: var(--danger); }
+    .hidden { display: none !important; }
+    .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+    .btn-cancel { flex: 1; height: 40px; border-radius: 7px; border: 1px solid var(--border); background: none; font-size: 13px; font-family: var(--sans); cursor: pointer; color: var(--muted); }
+    .btn-confirm { flex: 2; height: 40px; border-radius: 7px; border: none; background: var(--danger); color: white; font-size: 13px; font-weight: 500; font-family: var(--sans); cursor: pointer; transition: opacity 0.15s; }
+    .btn-confirm:hover { opacity: 0.85; }
+
+    /* TABLE EAN */
+    .ean-search-row { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); display: flex; gap: 0.75rem; align-items: center; }
+    .ean-search { flex: 1; border: 1px solid var(--border); border-radius: 7px; padding: 0.5rem 0.875rem; font-size: 13px; font-family: var(--sans); background: var(--bg); color: var(--text); outline: none; }
+    .ean-search:focus { border-color: var(--accent-mid); background: white; }
+    .ean-count { font-size: 11px; font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+    .empty-state { padding: 3rem; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .empty-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+
+    /* BLACKLIST PAGE */
+    .blacklist-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
+    .blacklist-count { font-size: 13px; color: var(--muted); font-family: var(--mono); margin-top: 0.25rem; }
+    .btn-sm { padding: 0.5rem 1rem; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-family: var(--sans); cursor: pointer; color: var(--text); transition: all 0.15s; }
+    .btn-sm:hover { border-color: var(--accent-mid); color: var(--accent); }
+    .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
+    .blacklist-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; }
+    .bl-designation { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+    .bl-ean { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+    .bl-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; align-items: center; }
+    .bl-chip { font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+    .bl-chip.danger { background: var(--danger-light); color: var(--danger); border-color: #F5C0C0; }
+    .bl-chip.warn { background: var(--warn-bg); color: var(--orange); border-color: #F0D070; }
+    .bl-raison { margin-top: 0.6rem; font-size: 12px; color: var(--muted); font-style: italic; border-left: 2px solid var(--border); padding-left: 0.75rem; }
+    .bl-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+    .btn-bl-edit { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-family: var(--mono); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .btn-bl-edit:hover { border-color: var(--accent-mid); color: var(--accent); }
+    .btn-bl-remove { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-family: var(--mono); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .btn-bl-remove:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
+    .bl-status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); margin-right: 4px; }
+    .bl-status-dot.watch { background: var(--orange); }
+    .taux-badge { font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 4px; }
+    .taux-badge.bad { background: var(--danger-light); color: var(--danger); }
+    .taux-badge.warn { background: var(--warn-bg); color: var(--orange); }
+    .taux-badge.ok { background: var(--accent-light); color: var(--accent); }
+
+    @media (max-width: 600px) {
+      main { padding: 1.5rem 1rem; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-top { padding: 1rem 1rem 0; }
+      .tabs { padding: 0 1rem; }
+      .tab-btn { padding: 0.6rem 0.75rem; font-size: 12px; }
+      .blacklist-card { grid-template-columns: 1fr; }
+      .bl-actions { flex-direction: row; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span class="logo">Pharmacie Michelet</span>
+    <span class="logo-sub">Prix Net Rendu</span>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabAnalyse" onclick="showTab('Analyse', this)">📄 Analyse facture</button>
+    <button class="tab-btn" id="tabBlacklist" onclick="showTab('Blacklist', this)">🚫 Ne plus commander <span class="tab-badge" id="blBadge" style="display:none">0</span></button>
+    <button class="tab-btn" id="tabEan" onclick="showTab('Ean', this)">🔖 Table EAN <span class="tab-badge green" id="eanBadge">0</span></button>
+  </div>
+</header>
+
+<!-- PAGE ANALYSE -->
+<div class="page active" id="pageAnalyse">
+<main>
+  <h1 class="page-title">Calcul du prix net rendu</h1>
+  <p class="page-sub">Analyse en 6 étapes avec contrôles stricts — remises exclues, frais annexes répartis au prorata, zéro écart toléré.</p>
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">📄</div>
+    <div class="drop-title">Importer la facture</div>
+    <div class="drop-sub">Glissez-déposez ou cliquez — PDF, JPG, PNG acceptés</div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+  </div>
+  <div id="fileInfo"></div>
+  <button class="btn-primary" id="btnAnalyze" onclick="analyze()" disabled>Calculer le prix net rendu</button>
+  <div class="status-line" id="status"></div>
+  <div class="error-line" id="errorMsg"></div>
+  <div class="results" id="results" style="display:none"></div>
+</main>
+</div>
+
+<!-- PAGE BLACKLIST -->
+<div class="page" id="pageBlacklist">
+<main>
+  <div class="blacklist-header">
+    <div>
+      <h1 class="page-title">Ne plus commander</h1>
+      <p class="page-sub">Produits exclus — prix de revient inacceptable ou marge insuffisante.</p>
+      <div class="blacklist-count" id="blCount">0 produit(s)</div>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button class="btn-sm" onclick="exportBlacklist()">⬇ CSV</button>
+      <button class="btn-sm danger" onclick="clearBlacklist()">🗑 Vider</button>
+    </div>
+  </div>
+  <div id="blacklistContent"></div>
+</main>
+</div>
+
+<!-- PAGE TABLE EAN -->
+<div class="page" id="pageEan">
+<main>
+  <h1 class="page-title">Table de correspondance EAN</h1>
+  <p class="page-sub">Construite automatiquement à partir des factures analysées. Enrichie à chaque nouvelle analyse.</p>
+  <div class="table-wrap">
+    <div class="ean-search-row">
+      <input type="text" class="ean-search" id="eanSearch" placeholder="Rechercher par EAN ou libellé…" oninput="renderEanTable()">
+      <span class="ean-count" id="eanCount">0 produit(s)</span>
+      <button class="btn-sm danger" onclick="clearEanTable()">🗑 Vider</button>
+    </div>
+    <div id="eanTableContent"></div>
+  </div>
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Ajouter à la liste</div>
+    <div class="modal-sub" id="modalSub">—</div>
+    <div class="modal-info-box" id="modalInfoBox"></div>
+    <div class="modal-field">
+      <label class="modal-label">Prix de vente public € TTC <span style="font-weight:300;text-transform:none">(optionnel — pour calculer la marge)</span></label>
+      <input type="number" class="modal-input" id="modalPV" step="0.01" min="0" placeholder="ex: 12.50" oninput="updateTauxDisplay()">
+    </div>
+    <div class="taux-display bad hidden" id="tauxDisplay">—</div>
+    <div class="modal-field">
+      <label class="modal-label">Raison / note</label>
+      <input type="text" class="modal-input" id="modalRaison" placeholder="ex: Marge insuffisante, concurrent moins cher, doublons…">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Statut</label>
+      <select class="modal-input" id="modalStatut">
+        <option value="stop">🚫 Ne plus commander</option>
+        <option value="watch">👁 Surveiller</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmBlacklist()">Ajouter à la liste</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PROXY_URL = '/api/analyze';
+  const MODEL = 'claude-sonnet-4-20250514';
+  const LS_BL  = 'pnr-blacklist-v1';
+  const LS_EAN = 'pnr-ean-table-v1';
+
+  let fileData = null, fileType = null;
+  let _modalProduct = null;
+  let _editId = null;
+
+  // ─── Storage ───────────────────────────────────────────────
+  function getBl()  { try { return JSON.parse(localStorage.getItem(LS_BL)  || '[]'); } catch(e) { return []; } }
+  function saveBl(a){ localStorage.setItem(LS_BL, JSON.stringify(a)); refreshBadges(); }
+  function getEan() { try { return JSON.parse(localStorage.getItem(LS_EAN) || '{}'); } catch(e) { return {}; } }
+  function saveEan(o){ localStorage.setItem(LS_EAN, JSON.stringify(o)); refreshBadges(); }
+
+  function refreshBadges() {
+    const nBl  = getBl().length;
+    const nEan = Object.keys(getEan()).length;
+    const badge = document.getElementById('blBadge');
+    badge.textContent = nBl;
+    badge.style.display = nBl > 0 ? 'inline' : 'none';
+    document.getElementById('eanBadge').textContent = nEan;
+    document.getElementById('blCount').textContent  = `${nBl} produit(s)`;
+    document.getElementById('eanCount').textContent = `${nEan} produit(s)`;
+  }
+
+  // ─── Mémorisation EAN ───────────────────────────────────────
+  function memorizeEan(produits, fournisseur) {
+    const tbl = getEan(); let changed = false;
+    produits.forEach(p => {
+      if (!p.ean || !p.designation) return;
+      const ean = p.ean.trim(); if (!ean) return;
+      const ex = tbl[ean];
+      if (!ex || p.designation.length > (ex.designation || '').length) {
+        tbl[ean] = { ean, designation: p.designation, fournisseur: fournisseur || '', lastSeen: new Date().toLocaleDateString('fr-FR'), reference: p.reference || '' };
+        changed = true;
+      }
+    });
+    if (changed) saveEan(tbl);
+  }
+
+  // ─── Tabs ───────────────────────────────────────────────────
+  function showTab(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'Blacklist') renderBlacklist();
+    if (name === 'Ean') renderEanTable();
+  }
+
+  // ─── Upload ─────────────────────────────────────────────────
+  const dropZone  = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  dropZone.onclick = () => fileInput.click();
+  dropZone.ondragover  = e => { e.preventDefault(); dropZone.classList.add('dragging'); };
+  dropZone.ondragleave = () => dropZone.classList.remove('dragging');
+  dropZone.ondrop = e => { e.preventDefault(); dropZone.classList.remove('dragging'); handleFile(e.dataTransfer.files[0]); };
+  fileInput.onchange = e => handleFile(e.target.files[0]);
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!['application/pdf','image/jpeg','image/png','image/jpg'].includes(file.type)) { showError('Format non supporté.'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      fileData = e.target.result.split(',')[1]; fileType = file.type;
+      showError('');
+      document.getElementById('fileInfo').innerHTML = `<div style="margin-top:1rem"><span class="file-pill">📎 ${file.name} · ${(file.size/1024).toFixed(0)} Ko <button class="remove-btn" onclick="removeFile()">✕</button></span></div>`;
+      document.getElementById('btnAnalyze').disabled = false;
+      document.getElementById('status').textContent = 'Fichier prêt — cliquez sur Calculer.';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFile() {
+    fileData = null; fileType = null;
+    document.getElementById('fileInfo').innerHTML = '';
+    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('status').textContent = '';
+    document.getElementById('results').style.display = 'none';
+    fileInput.value = '';
+  }
+
+  function showError(msg) { document.getElementById('errorMsg').textContent = msg; }
+  function fmt(n, d=2) { return (Math.round(n * 10000) / 10000).toFixed(d); }
+
+  // ─── Analyse ────────────────────────────────────────────────
+  async function analyze() {
+    if (!fileData) return;
+    const btn = document.getElementById('btnAnalyze');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>Analyse en cours…';
+    document.getElementById('status').textContent = 'Claude analyse la facture en 6 étapes…';
+    showError('');
+    document.getElementById('results').style.display = 'none';
+
+    const contentType = fileType === 'application/pdf' ? 'document' : 'image';
+    const prompt = `Tu es un expert en analyse de factures pharmacie.
+Objectif : calculer le prix net rendu réel par produit (coût de revient unitaire).
+
+LECTURE QUANTITÉS (CRITIQUE) :
+- La quantité est le chiffre en PREMIÈRE colonne, AVANT le nom du produit
+- Ne JAMAIS supposer une quantité de 1 — toujours lire explicitement
+- La facture indique souvent "X lignes / Y articles" — utiliser Y comme contrôle
+- Si illisible → noter dans "incoherence"
+
+BASE PRODUITS — RÈGLE CENTRALE :
+- Utiliser UNIQUEMENT le "Total HT" de chaque ligne produit (dernière colonne du tableau)
+- IGNORER complètement : PU HT brut, % remise, total remises → inutiles et sources d'erreur
+- Structure colonnes Sagitta / La Centrale Pharma :
+  COL 1 : Qté | COL 2 : Désignation | COL 3 : EAN | COL 4 : PU brut | COL 5 : % Remise | COL 6 : PU net | COL 7 : Total HT ligne ← SEULE valeur fiable
+
+RÈGLE CRITIQUE DE FIABILITÉ :
+- Le "Total HT ligne" est la SEULE valeur fiable
+- Si (Qté × PU HT net affiché) ≠ Total HT ligne → recalculer : PU réel = Total HT ligne / quantité
+- Toujours utiliser le PU recalculé, jamais le PU affiché si incohérence
+
+FRAIS ANNEXES — HT STRICT :
+- Identifier uniquement les frais compte HT : frais de compte, transport, port, logistique, assurance
+- IGNORER toute ligne de TVA (ex: "Frais T.V.A. 20% compte") → TVA JAMAIS dans le coût de revient
+- IGNORER toutes les remises commerciales
+- Ne jamais ajouter les frais deux fois
+- Sur facture Sagitta : le Total Net HT inclut déjà les frais compte
+
+RECONSTITUTION DE LA BASE :
+- Base produits HT = Total Net HT facture - frais HT
+- Vérifier que cette base correspond à la somme des lignes produits
+
+CALCULS :
+1. Somme produits HT = somme des Total HT lignes
+2. Frais HT = montant HT des frais annexes (hors TVA)
+3. Poids ligne = Total HT ligne / Somme produits HT
+4. Frais répartis ligne = Frais HT × poids ligne
+5. Coût réel total ligne = Total HT ligne + frais répartis ligne
+6. Prix net rendu unitaire = Coût réel total ligne / quantité
+
+CONTRÔLES OBLIGATOIRES — écart > 0,02 € → STOP et expliquer :
+- Somme produits HT + Frais HT = Total Net HT facture
+- Somme des frais répartis = Frais HT
+- Somme des coûts réels = Total Net HT facture
+
+Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.
+
+{
+  "fournisseur": "",
+  "numero_facture": "",
+  "date": "",
+  "devise": "EUR",
+  "nb_lignes_facture": 0,
+  "nb_articles_facture": 0,
+  "produits": [
+    {
+      "designation": "",
+      "ean": "",
+      "reference": "",
+      "quantite": 1,
+      "prix_unitaire_ht": 0.000,
+      "total_ht": 0.000,
+      "total_ht_calcule": 0.000,
+      "incoherence": ""
+    }
+  ],
+  "frais_annexes": [
+    { "libelle": "", "montant": 0.00 }
+  ],
+  "remises_exclues": [
+    { "libelle": "", "montant": 0.00 }
+  ],
+  "total_produits_ht_facture": 0.00,
+  "total_produits_ht_calcule": 0.00,
+  "total_frais_annexes": 0.00,
+  "total_facture_ht": 0.00,
+  "controle_global": "",
+  "ecarts_residuels": ""
+}`;
+
+    try {
+      const resp = await fetch(PROXY_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: [{ type: contentType, source: { type: 'base64', media_type: fileType, data: fileData } }, { type: 'text', text: prompt }] }] })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error?.message || 'Erreur API');
+      const raw = data.content.map(b => b.text || '').join('');
+      let inv;
+      try { inv = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+      catch(e) { throw new Error('Document illisible. Vérifiez la qualité du fichier.'); }
+      const produits = inv.produits || [];
+      if (!produits.length) throw new Error('Aucun produit détecté.');
+      const frais = inv.frais_annexes || [];
+      const totalFrais = inv.total_frais_annexes || frais.reduce((s, f) => s + (f.montant || 0), 0);
+      const totalProduitsHT = inv.total_produits_ht_calcule || inv.total_produits_ht_facture || produits.reduce((s, p) => s + (p.total_ht || 0), 0);
+      memorizeEan(produits, inv.fournisseur);
+      renderResults(inv, produits, frais, totalFrais, totalProduitsHT);
+      const nbInco = produits.filter(p => p.incoherence && p.incoherence.trim()).length;
+      const totalQty = produits.reduce((s, p) => s + (p.quantite || 1), 0);
+      document.getElementById('status').textContent = `✓ ${produits.length} ligne(s) · ${totalQty} article(s) · ${frais.length} poste(s) de frais${nbInco ? ` · ⚠ ${nbInco} incohérence(s)` : ''} · 🔖 EAN mémorisés`;
+    } catch(e) {
+      showError(e.message);
+      document.getElementById('status').textContent = '';
+    }
+    btn.innerHTML = 'Calculer le prix net rendu';
+    btn.disabled = false;
+  }
+
+  // ─── Render résultats ────────────────────────────────────────
+  function renderResults(inv, produits, frais, totalFrais, totalProduitsHT) {
+    const devise = inv.devise || '€';
+    let totalNet = 0, sumFraisRepartis = 0;
+
+    const metaItems = [
+      inv.fournisseur    && { l: 'Fournisseur',         v: inv.fournisseur },
+      inv.numero_facture && { l: 'N° facture',           v: inv.numero_facture },
+      inv.date           && { l: 'Date',                 v: inv.date },
+      inv.nb_lignes_facture && { l: 'Lignes / articles', v: `${inv.nb_lignes_facture} / ${inv.nb_articles_facture}` },
+                            { l: 'Devise',               v: devise },
+    ].filter(Boolean);
+    const metaHTML = metaItems.map(m => `<div class="meta-cell"><div class="meta-label">${m.l}</div><div class="meta-value">${m.v}</div></div>`).join('');
+
+    let alertesHTML = '';
+    if (inv.controle_global?.trim()) {
+      const ok = Math.abs((inv.total_produits_ht_facture||0) - (inv.total_produits_ht_calcule||0)) < 0.02;
+      alertesHTML += `<div class="alert ${ok ? 'alert-ok' : 'alert-warn'}"><div class="alert-title">Contrôle global</div>${inv.controle_global}</div>`;
+    }
+    if (inv.ecarts_residuels?.trim()) {
+      alertesHTML += `<div class="alert alert-warn"><div class="alert-title">Écarts résiduels</div>${inv.ecarts_residuels}</div>`;
+    }
+
+    const fraisHTML = frais.length
+      ? frais.map(f => `<span class="chip">${f.libelle} <span class="chip-amount">+${fmt(f.montant)} ${devise}</span></span>`).join('')
+      : `<span class="no-frais-note">Aucun frais annexe détecté</span>`;
+
+    const remises = inv.remises_exclues || [];
+    const remisesHTML = remises.length
+      ? `<div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+          <div class="section-label" style="margin-bottom:0.4rem">Remises exclues (déjà intégrées dans les prix HT)</div>
+          <div class="frais-chips">${remises.map(r => `<span class="chip" style="opacity:0.7">${r.libelle} <span style="font-family:var(--mono);color:var(--warn-text)">${fmt(r.montant)} ${devise}</span></span>`).join('')}</div>
+        </div>` : '';
+
+    // Calculs par produit
+    const blEans = new Set(getBl().map(e => e.ean));
+    const computed = produits.map(p => {
+      const totalHT    = p.total_ht || 0;
+      const poidsPct   = totalProduitsHT > 0 ? totalHT / totalProduitsHT : 0;
+      const fraisLigne = totalFrais * poidsPct;
+      const coutTotal  = totalHT + fraisLigne;
+      const qty        = p.quantite || 1;
+      const coutU      = coutTotal / qty;
+      totalNet        += coutTotal;
+      sumFraisRepartis += fraisLigne;
+      return { ...p, totalHT, poidsPct, fraisLigne, coutTotal, qty, coutU };
+    });
+
+    let rows = '';
+    computed.forEach((p, idx) => {
+      const hasInco = p.incoherence?.trim();
+      const isAdded = blEans.has(p.ean);
+      // Stocker les données produit sur un élément data pour éviter les problèmes d'encoding JSON dans onclick
+      rows += `<tr class="${hasInco ? 'incoherent' : ''}" data-prod-idx="${idx}">
+        <td>
+          <span style="font-weight:500">${p.designation || '—'}</span>
+          ${p.reference ? `<div class="ref-text">${p.reference}</div>` : ''}
+          ${hasInco ? `<div class="incoh-flag">⚠ ${p.incoherence}</div>` : ''}
+        </td>
+        <td>${p.ean ? `<span class="ean-badge">${p.ean}</span>` : `<span style="color:var(--muted);font-size:11px">—</span>`}</td>
+        <td class="td-r"><strong>${p.qty}</strong></td>
+        <td class="td-r" style="font-family:var(--mono)">${fmt(p.prix_unitaire_ht, 3)}</td>
+        <td class="td-r" style="font-family:var(--mono)">${fmt(p.totalHT, 2)}</td>
+        <td class="td-r pct-cell">
+          ${fmt(p.poidsPct * 100, 1)}%
+          <div class="pct-bar-bg"><div class="pct-bar" style="width:${Math.min(p.poidsPct * 100, 100)}%"></div></div>
+        </td>
+        <td class="td-r" style="font-family:var(--mono);color:var(--muted)">+${fmt(p.fraisLigne, 3)}</td>
+        <td class="td-r">
+          <div class="net-val">${fmt(p.coutU, 3)} ${devise}</div>
+          <div class="net-total">${fmt(p.coutTotal, 2)} total</div>
+        </td>
+        <td class="td-r">
+          <button class="btn-blacklist ${isAdded ? 'added' : ''}" data-idx="${idx}"
+            title="${isAdded ? 'Déjà dans la liste' : 'Ajouter à Ne plus commander'}">
+            ${isAdded ? '✓ Liste' : '+ Liste'}
+          </button>
+        </td>
+      </tr>`;
+    });
+
+    // Contrôles
+    const diffFrais   = Math.abs(sumFraisRepartis - totalFrais);
+    const ctrlFraisOk = diffFrais < 0.01;
+    const totalFactureHT = inv.total_facture_ht || 0;
+    const diffTotal   = totalFactureHT > 0 ? Math.abs(totalNet - totalFactureHT) : -1;
+    const ctrlTotalOk = diffTotal < 0 || diffTotal < 0.05;
+    const nbInco      = produits.filter(p => p.incoherence?.trim()).length;
+    const totalQtyLu  = produits.reduce((s, p) => s + (p.quantite || 1), 0);
+    const qtyFacture  = inv.nb_articles_facture || 0;
+    const ctrlQtyOk   = qtyFacture === 0 || totalQtyLu === qtyFacture;
+
+    const ctrlHTML = `<div class="ctrl-row">
+      <span class="ctrl-badge ${ctrlFraisOk ? 'ok' : 'err'}">${ctrlFraisOk ? '✓' : '✗'} Frais répartis ${fmt(sumFraisRepartis, 3)} / attendu ${fmt(totalFrais, 2)} ${devise}</span>
+      ${totalFactureHT > 0 ? `<span class="ctrl-badge ${ctrlTotalOk ? 'ok' : 'warn'}">${ctrlTotalOk ? '✓' : '⚠'} Coût total ${fmt(totalNet, 2)} / facture HT ${fmt(totalFactureHT, 2)} ${devise}</span>` : ''}
+      ${qtyFacture > 0 ? `<span class="ctrl-badge ${ctrlQtyOk ? 'ok' : 'err'}">${ctrlQtyOk ? '✓' : '⚠'} Articles lus : ${totalQtyLu} / attendu : ${qtyFacture}</span>` : ''}
+      <span class="ctrl-badge ${nbInco > 0 ? 'warn' : 'ok'}">${nbInco > 0 ? `⚠ ${nbInco} incohérence(s)` : '✓ Toutes lignes cohérentes'}</span>
+    </div>`;
+
+    const pctFrais = totalProduitsHT > 0 ? fmt(totalFrais / totalProduitsHT * 100, 2) : '0.00';
+
+    document.getElementById('results').innerHTML = `
+      <div class="section-label">Informations facture</div>
+      <div class="invoice-meta">${metaHTML}</div>
+      ${alertesHTML}
+      <div class="section-label">Frais annexes identifiés</div>
+      <div class="frais-box"><div class="frais-chips">${fraisHTML}</div>${remisesHTML}</div>
+      ${ctrlHTML}
+      <div class="section-label">Détail par produit</div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>Désignation</th><th>EAN</th>
+          <th class="th-r">Qté</th><th class="th-r">PU HT net</th>
+          <th class="th-r">Total HT net</th><th class="th-r">Poids %</th>
+          <th class="th-r">Frais répartis</th><th class="th-r">Coût réel / u</th>
+          <th class="th-r">Action</th>
+        </tr></thead>
+        <tbody id="resultsTbody">${rows}</tbody>
+      </table></div>
+      <p class="note">Frais répartis au prorata du montant HT · Remises non retraitées · EAN mémorisés automatiquement</p>
+      <div class="summary-grid">
+        <div class="sum-card"><div class="sum-label">Total produits HT</div><div class="sum-value">${fmt(totalProduitsHT, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">Total frais annexes</div><div class="sum-value">${fmt(totalFrais, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">Coût réel total</div><div class="sum-value accent">${fmt(totalNet, 2)} ${devise}</div></div>
+        <div class="sum-card"><div class="sum-label">% frais / HT</div><div class="sum-value">${pctFrais}%</div></div>
+      </div>`;
+    document.getElementById('results').style.display = 'block';
+
+    // Stocker computed pour les boutons
+    window._lastComputed = computed;
+    window._lastInv = inv;
+
+    // Délégation événement sur les boutons + Liste
+    document.getElementById('resultsTbody').addEventListener('click', function(e) {
+      const btn = e.target.closest('.btn-blacklist');
+      if (!btn || btn.classList.contains('added')) return;
+      const idx = parseInt(btn.getAttribute('data-idx'));
+      const p   = window._lastComputed[idx];
+      if (!p) return;
+      openModal({ ean: p.ean || '', designation: p.designation || '', reference: p.reference || '', coutU: p.coutU, fournisseur: window._lastInv?.fournisseur || '' }, btn);
+    });
+  }
+
+  // ─── Modal ──────────────────────────────────────────────────
+  let _triggerBtn = null;
+
+  function openModal(prod, triggerBtn) {
+    _modalProduct = prod;
+    _editId = null;
+    _triggerBtn = triggerBtn || null;
+    document.getElementById('modalTitle').textContent = 'Ajouter à la liste';
+    document.getElementById('modalSub').textContent = prod.designation || prod.ean || '—';
+    document.getElementById('modalInfoBox').innerHTML = `
+      <div class="modal-info-row"><span class="modal-info-key">EAN</span><span class="modal-info-val">${prod.ean || '—'}</span></div>
+      <div class="modal-info-row"><span class="modal-info-key">Coût net rendu / u</span><span class="modal-info-val">${fmt(prod.coutU, 3)} €</span></div>
+      ${prod.fournisseur ? `<div class="modal-info-row"><span class="modal-info-key">Fournisseur</span><span class="modal-info-val">${prod.fournisseur}</span></div>` : ''}`;
+    document.getElementById('modalPV').value = '';
+    document.getElementById('modalRaison').value = '';
+    document.getElementById('modalStatut').value = 'stop';
+    document.getElementById('tauxDisplay').classList.add('hidden');
+    document.getElementById('btnConfirm').textContent = 'Ajouter à la liste';
+    document.getElementById('btnConfirm').onclick = confirmBlacklist;
+    document.getElementById('modalOverlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('modalPV').focus(), 50);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.add('hidden');
+    _modalProduct = null; _editId = null; _triggerBtn = null;
+  }
+
+  function updateTauxDisplay() {
+    if (!_modalProduct) return;
+    const pv = parseFloat(document.getElementById('modalPV').value);
+    const el = document.getElementById('tauxDisplay');
+    if (!pv || pv <= 0) { el.classList.add('hidden'); return; }
+    const taux = (pv - _modalProduct.coutU) / pv * 100;
+    const cls  = taux >= 30 ? 'ok' : taux >= 20 ? 'warn' : 'bad';
+    el.className = `taux-display ${cls}`;
+    el.textContent = `Taux de marque ≈ ${fmt(taux, 1)}%  ${taux >= 30 ? '✓ Acceptable' : taux >= 20 ? '⚠ Limite' : '✗ Insuffisant'}`;
+  }
+
+  function confirmBlacklist() {
+    if (!_modalProduct) return;
+    const pv   = parseFloat(document.getElementById('modalPV').value) || null;
+    const taux = pv ? (pv - _modalProduct.coutU) / pv * 100 : null;
+    const entry = {
+      id: _editId || Date.now(),
+      ean: _modalProduct.ean,
+      designation: _modalProduct.designation,
+      reference: _modalProduct.reference || '',
+      fournisseur: _modalProduct.fournisseur || '',
+      coutU: _modalProduct.coutU,
+      pv, taux,
+      raison: document.getElementById('modalRaison').value.trim(),
+      statut: document.getElementById('modalStatut').value,
+      date: new Date().toLocaleDateString('fr-FR')
+    };
+    const bl  = getBl();
+    const idx = bl.findIndex(e => e.ean === entry.ean);
+    if (idx >= 0) bl[idx] = entry; else bl.unshift(entry);
+    saveBl(bl);
+    closeModal();
+
+    // Mettre à jour bouton déclencheur
+    if (_triggerBtn) {
+      _triggerBtn.textContent = '✓ Liste';
+      _triggerBtn.classList.add('added');
+    }
+
+    // Flash
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:var(--danger);color:white;padding:0.75rem 1.25rem;border-radius:8px;font-size:13px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:320px';
+    flash.textContent = `🚫 Ajouté : ${entry.designation.substring(0, 40)}`;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 3000);
+  }
+
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  // ─── Blacklist page ─────────────────────────────────────────
+  function renderBlacklist() {
+    const bl  = getBl();
+    const el  = document.getElementById('blacklistContent');
+    document.getElementById('blCount').textContent = `${bl.length} produit(s)`;
+    if (!bl.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🚫</div><div>Aucun produit dans la liste pour l'instant.</div><div style="margin-top:0.5rem;font-size:12px;color:var(--muted)">Analysez une facture et cliquez sur <strong>+ Liste</strong> sur les lignes à exclure.</div></div>`;
+      return;
+    }
+    el.innerHTML = bl.map(e => {
+      const tauxBadge = (e.taux !== null && e.taux !== undefined)
+        ? `<span class="taux-badge ${e.taux >= 30 ? 'ok' : e.taux >= 20 ? 'warn' : 'bad'}">${fmt(e.taux, 1)}% marge</span>`
+        : '';
+      const pvBadge   = e.pv ? `<span class="bl-chip">PV ${fmt(e.pv, 2)} €</span>` : '';
+      const isWatch   = e.statut === 'watch';
+      const statusHTML = `<span style="font-size:11px;font-family:var(--mono);color:var(--muted)"><span class="bl-status-dot ${isWatch ? 'watch' : ''}"></span>${isWatch ? 'Surveillance' : 'Ne plus commander'}</span>`;
+      return `<div class="blacklist-card">
+        <div>
+          <div class="bl-designation">${e.designation || '—'}</div>
+          <div class="bl-ean">${e.ean || ''} ${e.fournisseur ? '· ' + e.fournisseur : ''} · ${e.date}</div>
+          <div class="bl-meta">
+            ${tauxBadge}
+            <span class="bl-chip danger">Coût rendu : ${fmt(e.coutU, 3)} €/u</span>
+            ${pvBadge}
+            ${statusHTML}
+          </div>
+          ${e.raison ? `<div class="bl-raison">${e.raison}</div>` : ''}
+        </div>
+        <div class="bl-actions">
+          <button class="btn-bl-edit" onclick="editBl(${e.id})">✏ Éditer</button>
+          <button class="btn-bl-remove" onclick="removeBl(${e.id})">✕ Retirer</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function removeBl(id) {
+    if (!confirm('Retirer ce produit de la liste ?')) return;
+    saveBl(getBl().filter(e => e.id !== id));
+    renderBlacklist();
+  }
+
+  function clearBlacklist() {
+    if (!confirm('Vider toute la liste "Ne plus commander" ?')) return;
+    saveBl([]);
+    renderBlacklist();
+  }
+
+  function editBl(id) {
+    const entry = getBl().find(e => e.id === id);
+    if (!entry) return;
+    _editId = id;
+    _modalProduct = { ean: entry.ean, designation: entry.designation, coutU: entry.coutU, fournisseur: entry.fournisseur, reference: entry.reference };
+    document.getElementById('modalTitle').textContent = 'Modifier l\'entrée';
+    document.getElementById('modalSub').textContent = entry.designation;
+    document.getElementById('modalInfoBox').innerHTML = `
+      <div class="modal-info-row"><span class="modal-info-key">EAN</span><span class="modal-info-val">${entry.ean || '—'}</span></div>
+      <div class="modal-info-row"><span class="modal-info-key">Coût net rendu / u</span><span class="modal-info-val">${fmt(entry.coutU, 3)} €</span></div>`;
+    document.getElementById('modalPV').value = entry.pv || '';
+    document.getElementById('modalRaison').value = entry.raison || '';
+    document.getElementById('modalStatut').value = entry.statut || 'stop';
+    document.getElementById('tauxDisplay').classList.add('hidden');
+    if (entry.pv) updateTauxDisplay();
+    document.getElementById('btnConfirm').textContent = 'Enregistrer';
+    document.getElementById('btnConfirm').onclick = () => { confirmBlacklist(); renderBlacklist(); };
+    document.getElementById('modalOverlay').classList.remove('hidden');
+  }
+
+  function exportBlacklist() {
+    const bl = getBl();
+    if (!bl.length) return;
+    const header = 'EAN;Désignation;Fournisseur;Coût rendu (€);PV (€);Taux de marque (%);Statut;Raison;Date ajout';
+    const rows = bl.map(e => [
+      e.ean, e.designation, e.fournisseur,
+      fmt(e.coutU, 3), e.pv ? fmt(e.pv, 2) : '',
+      (e.taux !== null && e.taux !== undefined) ? fmt(e.taux, 1) : '',
+      e.statut === 'watch' ? 'Surveillance' : 'Ne plus commander',
+      e.raison, e.date
+    ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(';'));
+    const csv  = [header, ...rows].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a    = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ne-plus-commander-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  // ─── Table EAN ──────────────────────────────────────────────
+  function renderEanTable() {
+    const tbl = getEan();
+    const q   = (document.getElementById('eanSearch')?.value || '').toLowerCase().trim();
+    let entries = Object.values(tbl);
+    if (q) entries = entries.filter(e => (e.designation||'').toLowerCase().includes(q) || (e.ean||'').includes(q));
+    entries.sort((a, b) => (a.designation||'').localeCompare(b.designation||'', 'fr'));
+    const total = Object.keys(tbl).length;
+    document.getElementById('eanCount').textContent = q ? `${entries.length} / ${total} produit(s)` : `${total} produit(s)`;
+
+    if (!entries.length) {
+      document.getElementById('eanTableContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🔖</div><div>${total === 0 ? 'Aucun EAN mémorisé. Analysez des factures pour peupler cette table automatiquement.' : 'Aucun résultat pour cette recherche.'}</div></div>`;
+      return;
+    }
+    const rows = entries.map(e => `<tr>
+      <td><span class="ean-badge">${e.ean}</span></td>
+      <td style="font-weight:500">${e.designation}</td>
+      <td style="font-size:12px;color:var(--muted)">${e.fournisseur || '—'}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${e.reference || '—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${e.lastSeen || '—'}</td>
+      <td><button class="btn-bl-remove" onclick="deleteEan('${e.ean}')">✕</button></td>
+    </tr>`).join('');
+    document.getElementById('eanTableContent').innerHTML = `<table>
+      <thead><tr>
+        <th>EAN</th><th>Désignation</th><th>Fournisseur</th><th>Référence</th><th>Dernière vue</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function deleteEan(ean) {
+    const tbl = getEan(); delete tbl[ean]; saveEan(tbl); renderEanTable();
+  }
+
+  function clearEanTable() {
+    if (!confirm('Vider toute la table EAN ?')) return;
+    saveEan({}); renderEanTable();
+  }
+
+  // ─── Init ────────────────────────────────────────────────────
+  refreshBadges();
+</script>
+</body>
+</html>
